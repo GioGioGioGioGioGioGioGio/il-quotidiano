@@ -4,17 +4,23 @@
   "outputDirectory": "dist",
   "installCommand": "npm install",
   "devCommand": "npm run dev",
-  "env": {
-    "DATABASE_URL": "@database_url"
-  },
-  "build": {
-    "env": {
-      "DATABASE_URL": "@database_url"
-    }
-  },
   "functions": {
-    "app/api/**/*.ts": {
+    "src/api/**/*.ts": {
       "runtime": "nodejs18.x"
     }
-  }
+  },
+  "rewrites": [
+    {
+      "source": "/api/categories",
+      "destination": "/src/api/categories"
+    },
+    {
+      "source": "/api/articles/(.*)",
+      "destination": "/src/api/articles"
+    },
+    {
+      "source": "/api/newsletter/(.*)",
+      "destination": "/src/api/newsletter"
+    }
+  ]
 }
