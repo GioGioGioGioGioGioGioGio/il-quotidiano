@@ -142,16 +142,8 @@ export const useArticle = (slug: string) => {
 
         if (error) throw error;
 
-        // Record view
-        if (data) {
-          await supabase.from("article_views").insert([{ article_id: data.id }]);
-          
-          // Update views count
-          await supabase
-            .from("articles")
-            .update({ views_count: (data.views_count || 0) + 1 })
-            .eq("id", data.id);
-        }
+        // RIMOSSO: Tracking visualizzazioni per evitare errori con PostgreSQL
+        // Sarà implementato in futuro con API dedicate
 
         setArticle(data);
       } catch (err) {
