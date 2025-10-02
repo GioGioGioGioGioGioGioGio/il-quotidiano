@@ -1,0 +1,67 @@
+/* Stili personalizzati per gli articoli */
+.article-content {
+  line-height: 1.8;
+}
+
+.article-content p {
+  margin-bottom: 1.5rem;
+  text-align: justify;
+}
+
+.article-content p:last-child {
+  margin-bottom: 0;
+}
+
+.article-content h1,
+.article-content h2,
+.article-content h3,
+.article-content h4,
+.article-content h5,
+.article-content h6 {
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  font-weight: 700;
+}
+
+.article-content h1:first-child,
+.article-content h2:first-child,
+.article-content h3:first-child {
+  margin-top: 0;
+}
+
+.article-content ul,
+.article-content ol {
+  margin: 1.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.article-content li {
+  margin-bottom: 0.5rem;
+}
+
+.article-content blockquote {
+  margin: 2rem 0;
+  padding: 1rem 1.5rem;
+  border-left: 4px solid hsl(var(--accent));
+  background: hsl(var(--muted));
+  font-style: italic;
+}
+
+.article-content strong {
+  font-weight: 600;
+}
+
+.article-content em {
+  font-style: italic;
+}
+
+.article-content a {
+  color: hsl(var(--accent));
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s;
+}
+
+.article-content a:hover {
+  border-bottom-color: hsl(var(--accent));
+}

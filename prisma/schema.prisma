@@ -1,0 +1,146 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ArticleStatus {
+  draft
+  review
+  published
+  archived
+}
+
+enum CommentStatus {
+  pending
+  approved
+  rejected
+}
+
+enum Role {
+  admin
+  editor
+  user
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  slug        String    @unique
+  description String?
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  articles    Article[]
+
+  @@map("categories")
+}
+
+model Profile {
+  id          String   @id @default(cuid())
+  userId      String   @unique @map("user_id")
+  displayName String?  @map("display_name")
+  avatarUrl   String?  @map("avatar_url")
+  bio         String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  articles    Article[]
+  comments    Comment[]
+  userRoles   UserRole[]
+
+  @@map("profiles")
+}
+
+model Article {
+  id             String        @id @default(cuid())
+  title          String
+  subtitle       String?
+  slug           String        @unique
+  excerpt        String?
+  content        String
+  featuredImage  String?       @map("featured_image")
+  status         ArticleStatus @default(draft)
+  isFeatured     Boolean       @default(false) @map("is_featured")
+  isBreaking     Boolean       @default(false) @map("is_breaking")
+  readTime       Int           @default(5) @map("read_time")
+  viewsCount     Int           @default(0) @map("views_count")
+  publishedAt    DateTime?     @map("published_at")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+  
+  // Foreign Keys
+  categoryId     String        @map("category_id")
+  authorId       String        @map("author_id")
+  
+  // Relations
+  category       Category      @relation(fields: [categoryId], references: [id])
+  author         Profile       @relation(fields: [authorId], references: [id])
+  comments       Comment[]
+  views          ArticleView[]
+
+  @@map("articles")
+}
+
+model Comment {
+  id        String        @id @default(cuid())
+  content   String
+  status    CommentStatus @default(pending)
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+  
+  // Foreign Keys
+  articleId String        @map("article_id")
+  authorId  String        @map("author_id")
+  
+  // Relations
+  article   Article       @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  author    Profile       @relation(fields: [authorId], references: [id])
+
+  @@map("comments")
+}
+
+model NewsletterSubscriber {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  isActive     Boolean  @default(true) @map("is_active")
+  subscribedAt DateTime @default(now()) @map("subscribed_at")
+  
+  @@map("newsletter_subscribers")
+}
+
+model UserRole {
+  id        String   @id @default(cuid())
+  role      Role
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  // Foreign Keys
+  userId    String   @map("user_id")
+  
+  // Relations
+  user      Profile  @relation(fields: [userId], references: [id])
+  
+  @@unique([userId])
+  @@map("user_roles")
+}
+
+model ArticleView {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  // Foreign Keys
+  articleId String   @map("article_id")
+  
+  // Relations
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@map("article_views")
+}
