@@ -15,7 +15,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { prisma } from "@/lib/prisma";
+import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Save, Eye, ArrowLeft } from "lucide-react";
@@ -74,9 +74,12 @@ const ArticleEditor = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch('/api/categories');
-      if (!response.ok) throw new Error('Failed to fetch categories');
-      const data = await response.json();
+      const { data, error } = await supabase
+        .from("categories")
+        .select("*")
+        .order("name");
+
+      if (error) throw error;
       setCategories(data || []);
     } catch (error) {
       console.error("Error fetching categories:", error);
@@ -88,9 +91,13 @@ const ArticleEditor = () => {
 
     setLoading(true);
     try {
-      const response = await fetch(`/api/articles/${id}`);
-      if (!response.ok) throw new Error('Failed to fetch article');
-      const data = await response.json();
+      const { data, error } = await supabase
+        .from("articles")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      if (error) throw error;
 
       if (data) {
         setForm({
@@ -99,12 +106,12 @@ const ArticleEditor = () => {
           slug: data.slug || "",
           excerpt: data.excerpt || "",
           content: data.content || "",
-          featured_image: data.featuredImage || "",
-          category_id: data.categoryId || "",
+          featured_image: data.featured_image || "",
+          category_id: data.category_id || "",
           status: data.status || "draft",
-          is_featured: data.isFeatured || false,
-          is_breaking: data.isBreaking || false,
-          read_time: data.readTime || 5,
+          is_featured: data.is_featured || false,
+          is_breaking: data.is_breaking || false,
+          read_time: data.read_time || 5,
         });
       }
     } catch (error) {
@@ -169,42 +176,38 @@ const ArticleEditor = () => {
     setSaving(true);
     try {
       const articleData = {
-        title: form.title,
-        subtitle: form.subtitle,
-        slug: form.slug,
-        excerpt: form.excerpt,
-        content: form.content,
-        featuredImage: form.featured_image,
-        categoryId: form.category_id,
-        status: status || form.status,
-        isFeatured: form.is_featured,
-        isBreaking: form.is_breaking,
-        readTime: form.read_time,
-        authorId: user?.id,
-        ...(status === "published" && !isEditing ? { publishedAt: new Date().toISOString() } : {}),
+        ...form,
+        status: (status || form.status) as "draft" | "review" | "published" | "archived",
+        author_id: user?.id,
+        updated_at: new Date().toISOString(),
+        ...(status === "published" && !isEditing ? { published_at: new Date().toISOString() } : {}),
       };
 
-      const url = isEditing ? `/api/articles/${id}` : '/api/articles';
-      const method = isEditing ? 'PUT' : 'POST';
-      
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(articleData),
-      });
+      let result;
+      if (isEditing) {
+        result = await supabase
+          .from("articles")
+          .update(articleData)
+          .eq("id", id)
+          .select()
+          .single();
+      } else {
+        result = await supabase
+          .from("articles")
+          .insert([{ ...articleData, created_at: new Date().toISOString() }])
+          .select()
+          .single();
+      }
 
-      if (!response.ok) throw new Error('Failed to save article');
-      const result = await response.json();
+      if (result.error) throw result.error;
 
       toast({
         title: "Successo",
         description: `Articolo ${isEditing ? "aggiornato" : "creato"} con successo`,
       });
 
-      if (!isEditing && result.id) {
-        navigate(`/cms/articoli/${result.id}/modifica`);
+      if (!isEditing && result.data) {
+        navigate(`/cms/articoli/${result.data.id}/modifica`);
       }
     } catch (error) {
       console.error("Error saving article:", error);

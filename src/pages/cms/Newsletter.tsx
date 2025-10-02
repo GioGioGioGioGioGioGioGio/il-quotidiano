@@ -23,15 +23,16 @@ import {
   Download,
   Mail
 } from "lucide-react";
-import { prisma } from "@/lib/prisma";
+import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface Subscriber {
   id: string;
   email: string;
-  createdAt: string;
-  isActive: boolean;
+  created_at?: string;
+  subscribed_at?: string;
+  is_active: boolean;
 }
 
 const Newsletter = () => {
@@ -46,9 +47,12 @@ const Newsletter = () => {
 
   const fetchSubscribers = async () => {
     try {
-      const response = await fetch('/api/newsletter/subscribers');
-      if (!response.ok) throw new Error('Failed to fetch subscribers');
-      const data = await response.json();
+      const { data, error } = await supabase
+        .from("newsletter_subscribers")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
       setSubscribers(data || []);
     } catch (error) {
       console.error("Error fetching subscribers:", error);
@@ -66,11 +70,12 @@ const Newsletter = () => {
     if (!confirm(`Sei sicuro di voler rimuovere ${email} dalla newsletter?`)) return;
 
     try {
-      const response = await fetch(`/api/newsletter/subscribers/${id}`, {
-        method: 'DELETE',
-      });
-      
-      if (!response.ok) throw new Error('Failed to delete subscriber');
+      const { error } = await supabase
+        .from("newsletter_subscribers")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
 
       setSubscribers(subscribers.filter(subscriber => subscriber.id !== id));
       toast({
@@ -90,7 +95,7 @@ const Newsletter = () => {
     const csvContent = [
       "Email,Data Iscrizione,Attivo",
       ...subscribers.map(sub => 
-        `${sub.email},${new Date(sub.createdAt).toLocaleDateString("it-IT")},${sub.isActive ? "Sì" : "No"}`
+        `${sub.email},${new Date(sub.created_at || sub.subscribed_at || "").toLocaleDateString("it-IT")},${sub.is_active ? "Sì" : "No"}`
       )
     ].join("\n");
 
@@ -124,7 +129,7 @@ const Newsletter = () => {
     });
   };
 
-  const activeSubscribers = subscribers.filter(sub => sub.isActive).length;
+  const activeSubscribers = subscribers.filter(sub => sub.is_active).length;
   const totalSubscribers = subscribers.length;
 
   return (
@@ -216,15 +221,15 @@ const Newsletter = () => {
                     </TableCell>
                     <TableCell>
                       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                        subscriber.isActive 
+                        subscriber.is_active 
                           ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
                           : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
                       }`}>
-                        {subscriber.isActive ? "Attivo" : "Inattivo"}
+                        {subscriber.is_active ? "Attivo" : "Inattivo"}
                       </span>
                     </TableCell>
                     <TableCell>
-                      {formatDate(subscriber.createdAt)}
+                      {formatDate(subscriber.created_at || subscriber.subscribed_at || "")}
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
